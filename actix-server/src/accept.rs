@@ -2,6 +2,8 @@ use std::{io, thread, time::Duration};
 
 use actix_rt::time::Instant;
 use mio::{Interest, Poll, Token as MioToken};
+use netstat2::{AddressFamilyFlags, get_sockets_info, ProtocolFlags};
+use sysinfo::{System, SystemExt};
 use tracing::{debug, error, info};
 
 use crate::{
@@ -411,6 +413,15 @@ impl Accept {
                     // listener should be registered
                     info.timeout = Some(Instant::now() + Duration::from_millis(500));
                     self.set_timeout(TIMEOUT_DURATION_ON_ERROR);
+
+                    let af_flags = AddressFamilyFlags::IPV4 | AddressFamilyFlags::IPV6;
+                    let proto_flags = ProtocolFlags::TCP | ProtocolFlags::UDP;
+                    let sockets_info = get_sockets_info(af_flags, proto_flags);
+                    let pid = std::process::id();
+
+                    let sys = System::new_all();
+
+                    info!("{pid} {sockets_info:?} {sys:?}");
 
                     return;
                 }
